@@ -1793,3 +1793,784 @@ navigator.geolocation.getCurrentPosition(success, error, options);
 //  * - State management without classes
 //  * - Complete working application
 //  */
+// 'use strict';
+
+// /**
+//  * ============================================
+//  * PART 5: FUNCTIONAL PROGRAMMING - COMPLETE APP
+//  * ============================================
+//  *
+//  * This part shows how to wire together all the pure functions
+//  * from Part 4 into a working application using FP principles.
+//  *
+//  * KEY CONCEPT: STATE MANAGEMENT IN FP
+//  * ------------------------------------
+//  * Without classes, how do we manage state?
+//  *
+//  * Answer: Use CLOSURES
+//  *
+//  * A closure is when a function "remembers" variables from
+//  * its outer scope, even after that outer function has finished.
+//  *
+//  * Example:
+//  * ```javascript
+//  * function createCounter() {
+//  *   let count = 0;              // Private variable
+//  *
+//  *   return {
+//  *     increment: () => count++, // Remembers 'count'
+//  *     getValue: () => count     // Remembers 'count'
+//  *   };
+//  * }
+//  *
+//  * const counter = createCounter();
+//  * counter.increment();  // count = 1
+//  * counter.increment();  // count = 2
+//  * counter.getValue();   // Returns 2
+//  * ```
+//  */
+
+// // Import all pure functions from Part 4 (conceptually)
+// // In real code, these would be in separate modules
+
+// // ============================================
+// // STATE MANAGEMENT WITH CLOSURES
+// // ============================================
+
+// /**
+//  * Create the application state manager
+//  * Returns functions that can access and update state
+//  *
+//  * This is the FP equivalent of the App class from OOP
+//  */
+// const createAppState = () => {
+//   // PRIVATE STATE (like # fields in OOP)
+//   // These variables are trapped in closure
+//   let workouts = [];
+//   let map = null;
+//   let currentMarker = null;
+//   let isFormActive = false;
+
+//   /**
+//    * STATE GETTERS (read-only access)
+//    * Pure functions that return state
+//    */
+
+//   const getWorkouts = () => workouts;
+//   const getMap = () => map;
+//   const getCurrentMarker = () => currentMarker;
+//   const isFormCurrentlyActive = () => isFormActive;
+
+//   /**
+//    * STATE SETTERS (controlled mutation)
+//    * These are the ONLY functions that can modify state
+//    * Everything goes through them - no direct access!
+//    */
+
+//   /**
+//    * Set workouts array
+//    * In FP, we replace entire array instead of modifying
+//    *
+//    * @param {array} newWorkouts - New workouts array
+//    */
+//   const setWorkouts = (newWorkouts) => {
+//     workouts = newWorkouts;
+//   };
+
+//   /**
+//    * Add single workout (convenience method)
+//    * Uses functional addWorkout() helper
+//    */
+//   const addWorkout = (workout) => {
+//     // Create new array with workout added
+//     const updated = [...workouts, workout];
+//     workouts = updated;
+//   };
+
+//   /**
+//    * Set map object
+//    */
+//   const setMap = (newMap) => {
+//     map = newMap;
+//   };
+
+//   /**
+//    * Set current marker
+//    */
+//   const setCurrentMarker = (marker) => {
+//     currentMarker = marker;
+//   };
+
+//   /**
+//    * Set form active state
+//    */
+//   const setFormActive = (active) => {
+//     isFormActive = active;
+//   };
+
+//   /**
+//    * Clear current marker (set to null)
+//    */
+//   const clearCurrentMarker = () => {
+//     currentMarker = null;
+//     isFormActive = false;
+//   };
+
+//   // Return public interface
+//   // Only these functions can access/modify state
+//   return {
+//     // Getters
+//     getWorkouts,
+//     getMap,
+//     getCurrentMarker,
+//     isFormCurrentlyActive,
+
+//     // Setters
+//     setWorkouts,
+//     addWorkout,
+//     setMap,
+//     setCurrentMarker,
+//     setFormActive,
+//     clearCurrentMarker
+//   };
+// };
+
+// // ============================================
+// // UTILITY FUNCTIONS (from Part 4)
+// // ============================================
+
+// const getCurrentDate = () => {
+//   const today = new Date();
+//   const month = today.toLocaleString('default', { month: 'long' });
+//   const day = today.toLocaleString('default', { day: '2-digit' });
+//   return `${month} ${day}`;
+// };
+
+// const generateId = () => Date.now().toString();
+
+// const getEmoji = (type) => type === 'running' ? '🏃‍♂️' : '🚴‍♀️';
+
+// const formatDescription = (type, date) => {
+//   const typeCapitalized = type[0].toUpperCase() + type.slice(1);
+//   return `${typeCapitalized} on ${date}`;
+// };
+
+// const calculatePace = (distance, duration) => {
+//   if (!distance || distance <= 0) return '0.00';
+//   if (!duration || duration <= 0) return '0.00';
+//   return (duration / distance).toFixed(2);
+// };
+
+// const calculateSpeed = (distance, duration) => {
+//   if (!distance || distance <= 0) return '0.00';
+//   if (!duration || duration <= 0) return '0.00';
+//   return (distance / (duration / 60)).toFixed(2);
+// };
+
+// // ============================================
+// // VALIDATION FUNCTIONS (from Part 4)
+// // ============================================
+
+// const createValidator = (fieldName, minValue = 0) => {
+//   return (value) => {
+//     if (!value || value === '') {
+//       return `${fieldName} is required`;
+//     }
+//     const num = parseFloat(value);
+//     if (isNaN(num)) {
+//       return `${fieldName} must be a number`;
+//     }
+//     if (num < minValue) {
+//       return `${fieldName} must be at least ${minValue}`;
+//     }
+//     return null;
+//   };
+// };
+
+// const validateDistance = createValidator('Distance', 0.1);
+// const validateDuration = createValidator('Duration', 1);
+// const validateCadence = createValidator('Cadence', 1);
+// const validateElevation = createValidator('Elevation', 0);
+
+// const validateFormData = (formData) => {
+//   const { type, distance, duration, cadence, elevation } = formData;
+
+//   const distanceError = validateDistance(distance);
+//   if (distanceError) return distanceError;
+
+//   const durationError = validateDuration(duration);
+//   if (durationError) return durationError;
+
+//   if (type === 'running') {
+//     const cadenceError = validateCadence(cadence);
+//     if (cadenceError) return cadenceError;
+//   } else {
+//     const elevationError = validateElevation(elevation);
+//     if (elevationError) return elevationError;
+//   }
+
+//   return null;
+// };
+
+// // ============================================
+// // WORKOUT CREATION (from Part 4)
+// // ============================================
+
+// const createWorkout = (data) => {
+//   const { type, distance, duration, coords, date, cadence, elevation } = data;
+
+//   const baseWorkout = {
+//     id: generateId(),
+//     type,
+//     distance: parseFloat(distance),
+//     duration: parseFloat(duration),
+//     coords,
+//     date,
+//     emoji: getEmoji(type),
+//     description: formatDescription(type, date)
+//   };
+
+//   if (type === 'running') {
+//     return {
+//       ...baseWorkout,
+//       cadence: parseFloat(cadence),
+//       pace: calculatePace(distance, duration)
+//     };
+//   } else {
+//     return {
+//       ...baseWorkout,
+//       elevationGain: parseFloat(elevation),
+//       speed: calculateSpeed(distance, duration)
+//     };
+//   }
+// };
+
+// // ============================================
+// // HTML GENERATION (from Part 4)
+// // ============================================
+
+// const workoutToHTML = (workout) => {
+//   const commonHTML = `
+//     <li class="workout workout--${workout.type}" data-id="${workout.id}">
+//       <h2 class="workout__title">${workout.description}</h2>
+//       <div class="workout__details">
+//         <span class="workout__icon">${workout.emoji}</span>
+//         <span class="workout__value">${workout.distance}</span>
+//         <span class="workout__unit">km</span>
+//       </div>
+//       <div class="workout__details">
+//         <span class="workout__icon">⏱</span>
+//         <span class="workout__value">${workout.duration}</span>
+//         <span class="workout__unit">min</span>
+//       </div>
+//   `;
+
+//   const specificHTML = workout.type === 'running'
+//     ? `
+//       <div class="workout__details">
+//         <span class="workout__icon">⚡️</span>
+//         <span class="workout__value">${workout.pace}</span>
+//         <span class="workout__unit">min/km</span>
+//       </div>
+//       <div class="workout__details">
+//         <span class="workout__icon">🦶🏼</span>
+//         <span class="workout__value">${workout.cadence}</span>
+//         <span class="workout__unit">spm</span>
+//       </div>
+//     `
+//     : `
+//       <div class="workout__details">
+//         <span class="workout__icon">⚡️</span>
+//         <span class="workout__value">${workout.speed}</span>
+//         <span class="workout__unit">km/h</span>
+//       </div>
+//       <div class="workout__details">
+//         <span class="workout__icon">⛰</span>
+//         <span class="workout__value">${workout.elevationGain}</span>
+//         <span class="workout__unit">m</span>
+//       </div>
+//     `;
+
+//   return commonHTML + specificHTML + '</li>';
+// };
+
+// // ============================================
+// // STORAGE FUNCTIONS (from Part 4)
+// // ============================================
+
+// const saveWorkouts = (workouts) => {
+//   try {
+//     localStorage.setItem('workouts', JSON.stringify(workouts));
+//     return { success: true, error: null };
+//   } catch (error) {
+//     console.error('Save failed:', error);
+//     return {
+//       success: false,
+//       error: error.name === 'QuotaExceededError'
+//         ? 'Storage is full'
+//         : 'Failed to save'
+//     };
+//   }
+// };
+
+// const loadWorkouts = () => {
+//   try {
+//     const data = localStorage.getItem('workouts');
+//     if (!data) {
+//       return { success: true, data: [], error: null };
+//     }
+//     return { success: true, data: JSON.parse(data), error: null };
+//   } catch (error) {
+//     console.error('Load failed:', error);
+//     return { success: false, data: [], error: 'Failed to load' };
+//   }
+// };
+
+// // ============================================
+// // DOM HELPERS
+// // ============================================
+
+// const getDOMElements = () => ({
+//   form: document.querySelector('.form'),
+//   workoutsContainer: document.querySelector('.workouts'),
+//   inputType: document.querySelector('.form__input--type'),
+//   inputDistance: document.querySelector('.form__input--distance'),
+//   inputDuration: document.querySelector('.form__input--duration'),
+//   inputCadence: document.querySelector('.form__input--cadence'),
+//   inputElevation: document.querySelector('.form__input--elevation')
+// });
+
+// const getFormValues = (elements) => ({
+//   type: elements.inputType.value,
+//   distance: elements.inputDistance.value,
+//   duration: elements.inputDuration.value,
+//   cadence: elements.inputCadence.value,
+//   elevation: elements.inputElevation.value
+// });
+
+// const clearFormInputs = (elements) => {
+//   elements.inputDistance.value = '';
+//   elements.inputDuration.value = '';
+//   elements.inputCadence.value = '';
+//   elements.inputElevation.value = '';
+// };
+
+// const showForm = (form) => {
+//   form.classList.remove('hidden');
+// };
+
+// const hideForm = (form) => {
+//   form.classList.add('hidden');
+// };
+
+// const toggleElevationField = (elements) => {
+//   elements.inputCadence.closest('.form__row').classList.toggle('form__row--hidden');
+//   elements.inputElevation.closest('.form__row').classList.toggle('form__row--hidden');
+// };
+
+// // ============================================
+// // MAP HELPERS
+// // ============================================
+
+// const createMarkerIcon = () => L.icon({
+//   iconUrl: 'marker-icon.png',
+//   iconSize: [60, 60],
+//   iconAnchor: [33, 68],
+//   popupAnchor: [-3, -76],
+// });
+
+// const initializeMap = (lat, lng) => {
+//   const map = L.map('map').setView([lat, lng], 17);
+
+//   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+//     maxZoom: 20,
+//     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+//   }).addTo(map);
+
+//   return map;
+// };
+
+// const createMapMarker = (map, coords, icon) => {
+//   return L.marker(coords, { icon }).addTo(map);
+// };
+
+// const addPopupToMarker = (marker, content, className) => {
+//   marker.bindPopup(content, {
+//     autoClose: false,
+//     closeOnClick: false,
+//     className
+//   }).openPopup();
+//   return marker;
+// };
+
+// // ============================================
+// // EVENT HANDLER CREATORS (Higher-Order Functions)
+// // ============================================
+
+// /**
+//  * Creates map click handler
+//  * This demonstrates CURRYING and CLOSURES
+//  *
+//  * Currying: Function that returns function
+//  * Closure: Inner function remembers state and elements
+//  */
+// const createMapClickHandler = (state, elements) => {
+//   /**
+//    * This returned function has access to:
+//    * - state (from closure)
+//    * - elements (from closure)
+//    * - e (from event)
+//    */
+//   return (e) => {
+//     // Don't place marker if form already active
+//     if (state.isFormCurrentlyActive()) return;
+
+//     // Remove old marker if exists
+//     const oldMarker = state.getCurrentMarker();
+//     if (oldMarker) {
+//       state.getMap().removeLayer(oldMarker);
+//     }
+
+//     // Create new marker
+//     const icon = createMarkerIcon();
+//     const marker = createMapMarker(
+//       state.getMap(),
+//       [e.latlng.lat, e.latlng.lng],
+//       icon
+//     );
+
+//     // Update state
+//     state.setCurrentMarker(marker);
+//     state.setFormActive(true);
+
+//     // Show form
+//     showForm(elements.form);
+//     elements.inputDistance.focus();
+//   };
+// };
+
+// /**
+//  * Creates form submit handler
+//  */
+// const createFormSubmitHandler = (state, elements) => {
+//   return (e) => {
+//     e.preventDefault();
+
+//     // Get form values
+//     const formValues = getFormValues(elements);
+
+//     // Validate
+//     const validationError = validateFormData(formValues);
+//     if (validationError) {
+//       alert(validationError);
+//       return;
+//     }
+
+//     // Get marker coordinates
+//     const marker = state.getCurrentMarker();
+//     if (!marker) {
+//       alert('No location selected');
+//       return;
+//     }
+
+//     const coords = [marker.getLatLng().lat, marker.getLatLng().lng];
+
+//     // Create workout object
+//     const workoutData = {
+//       ...formValues,
+//       coords,
+//       date: getCurrentDate()
+//     };
+
+//     const workout = createWorkout(workoutData);
+
+//     // Add to state
+//     state.addWorkout(workout);
+
+//     // Save to storage
+//     const saveResult = saveWorkouts(state.getWorkouts());
+//     if (!saveResult.success) {
+//       alert(saveResult.error);
+//     }
+
+//     // Display workout in sidebar
+//     const html = workoutToHTML(workout);
+//     elements.form.insertAdjacentHTML('afterend', html);
+
+//     // Add popup to marker
+//     addPopupToMarker(
+//       marker,
+//       `${workout.emoji} ${workout.description}`,
+//       `${workout.type}-popup`
+//     );
+
+//     // Reset form
+//     clearFormInputs(elements);
+//     hideForm(elements.form);
+//     state.clearCurrentMarker();
+//   };
+// };
+
+// /**
+//  * Creates workout click handler (navigate to workout)
+//  */
+// const createWorkoutClickHandler = (state) => {
+//   return (e) => {
+//     const workoutEl = e.target.closest('.workout');
+//     if (!workoutEl) return;
+
+//     const workoutId = workoutEl.dataset.id;
+//     const workout = state.getWorkouts().find(w => w.id === workoutId);
+
+//     if (!workout) {
+//       console.error('Workout not found');
+//       return;
+//     }
+
+//     const map = state.getMap();
+//     if (!map) {
+//       console.error('Map not initialized');
+//       return;
+//     }
+
+//     map.setView(workout.coords, 17, {
+//       animate: true,
+//       pan: { duration: 1 }
+//     });
+//   };
+// };
+
+// /**
+//  * Creates escape key handler
+//  */
+// const createEscapeKeyHandler = (state, elements) => {
+//   return (e) => {
+//     if (e.key === 'Escape' && state.isFormCurrentlyActive()) {
+//       // Remove marker
+//       const marker = state.getCurrentMarker();
+//       if (marker) {
+//         state.getMap().removeLayer(marker);
+//       }
+
+//       // Hide form
+//       clearFormInputs(elements);
+//       hideForm(elements.form);
+//       state.clearCurrentMarker();
+//     }
+//   };
+// };
+
+// // ============================================
+// // RENDERING FUNCTIONS
+// // ============================================
+
+// /**
+//  * Render saved workouts on map
+//  */
+// const renderWorkoutsOnMap = (workouts, map) => {
+//   const icon = createMarkerIcon();
+
+//   workouts.forEach(workout => {
+//     const marker = createMapMarker(map, workout.coords, icon);
+//     addPopupToMarker(
+//       marker,
+//       `${workout.emoji} ${workout.description}`,
+//       `${workout.type}-popup`
+//     );
+//   });
+// };
+
+// /**
+//  * Render saved workouts in sidebar
+//  */
+// const renderWorkoutsInSidebar = (workouts, formElement) => {
+//   workouts.forEach(workout => {
+//     const html = workoutToHTML(workout);
+//     formElement.insertAdjacentHTML('afterend', html);
+//   });
+// };
+
+// // ============================================
+// // INITIALIZATION FUNCTION
+// // ============================================
+
+// /**
+//  * Main initialization function
+//  * This is the entry point of the application
+//  */
+// const initializeApp = () => {
+//   // Create state manager
+//   const state = createAppState();
+
+//   // Get DOM elements once
+//   const elements = getDOMElements();
+
+//   // Load saved workouts
+//   const loadResult = loadWorkouts();
+//   if (loadResult.success && loadResult.data.length > 0) {
+//     state.setWorkouts(loadResult.data);
+//     renderWorkoutsInSidebar(loadResult.data, elements.form);
+//   }
+
+//   // Setup event listeners
+//   elements.inputType.addEventListener(
+//     'change',
+//     () => toggleElevationField(elements)
+//   );
+
+//   elements.form.addEventListener(
+//     'submit',
+//     createFormSubmitHandler(state, elements)
+//   );
+
+//   document.addEventListener(
+//     'keydown',
+//     createEscapeKeyHandler(state, elements)
+//   );
+
+//   elements.workoutsContainer.addEventListener(
+//     'click',
+//     createWorkoutClickHandler(state)
+//   );
+
+//   // Request geolocation
+//   navigator.geolocation.getCurrentPosition(
+//     // Success callback
+//     (position) => {
+//       const { latitude, longitude } = position.coords;
+
+//       try {
+//         // Initialize map
+//         const map = initializeMap(latitude, longitude);
+//         state.setMap(map);
+
+//         // Attach map click handler
+//         map.on('click', createMapClickHandler(state, elements));
+
+//         // Render saved workouts on map
+//         if (state.getWorkouts().length > 0) {
+//           renderWorkoutsOnMap(state.getWorkouts(), map);
+//         }
+
+//       } catch (error) {
+//         console.error('Map initialization failed:', error);
+//         alert('Failed to load map');
+//       }
+//     },
+//     // Error callback
+//     (error) => {
+//       console.error('Geolocation error:', error);
+//       alert('Could not get your location');
+//     },
+//     // Options
+//     {
+//       enableHighAccuracy: true,
+//       timeout: 5000,
+//       maximumAge: 0
+//     }
+//   );
+// };
+
+// // ============================================
+// // START THE APP
+// // ============================================
+// initializeApp();
+
+// /**
+//  * =============================================
+//  * 🎓 FP VS OOP COMPARISON
+//  * =============================================
+//  *
+//  * OOP (Part 2):
+//  * -------------
+//  * class App {
+//  *   #workouts = [];           // Private field
+//  *   #map = null;
+//  *
+//  *   constructor() {
+//  *     this._init();           // Method call
+//  *   }
+//  *
+//  *   _handleSubmit(e) {
+//  *     this.#workouts.push(workout);  // Mutation
+//  *     this._save();           // Method call
+//  *   }
+//  * }
+//  *
+//  * FP (This Part):
+//  * ---------------
+//  * const createAppState = () => {
+//  *   let workouts = [];         // Closure variable
+//  *   let map = null;
+//  *
+//  *   return {
+//  *     addWorkout: (w) => {
+//  *       workouts = [...workouts, w];  // Immutable update
+//  *     }
+//  *   };
+//  * };
+//  *
+//  * const handleSubmit = (state) => (e) => {
+//  *   const updated = addWorkout(state.getWorkouts(), workout);
+//  *   state.setWorkouts(updated);  // Controlled update
+//  * };
+//  *
+//  * =============================================
+//  * BENEFITS OF FP APPROACH:
+//  * =============================================
+//  *
+//  * 1. TESTABILITY
+//  *    - Pure functions easy to test in isolation
+//  *    - No need to mock classes or dependencies
+//  *    Example:
+//  *    expect(calculatePace(5, 30)).toBe('6.00');
+//  *
+//  * 2. PREDICTABILITY
+//  *    - Same inputs always produce same outputs
+//  *    - No hidden state changes
+//  *    Example:
+//  *    const w1 = createWorkout(data);
+//  *    const w2 = createWorkout(data);
+//  *    // w1 and w2 have same properties
+//  *
+//  * 3. DEBUGGING
+//  *    - Easy to trace data flow
+//  *    - No "this" confusion
+//  *    - Can log at any step
+//  *
+//  * 4. REUSABILITY
+//  *    - Functions are independent
+//  *    - Can use them anywhere
+//  *    Example:
+//  *    calculatePace() can be used in React, Vue, Node.js
+//  *
+//  * 5. COMPOSITION
+//  *    - Combine small functions into bigger ones
+//  *    Example:
+//  *    const createAndValidate = (data) => {
+//  *      const error = validateFormData(data);
+//  *      return error ? null : createWorkout(data);
+//  *    };
+//  *
+//  * =============================================
+//  * WHEN TO USE EACH:
+//  * =============================================
+//  *
+//  * Use OOP when:
+//  * - Building large applications with many related entities
+//  * - Need inheritance hierarchies
+//  * - Working with teams familiar with OOP
+//  * - Using frameworks that expect classes (Angular)
+//  *
+//  * Use FP when:
+//  * - Building data transformation pipelines
+//  * - Need high testability and reliability
+//  * - Working with React, Redux, or functional libraries
+//  * - Want maximum predictability
+//  *
+//  * Best approach: MIX BOTH!
+//  * - Use classes for main app structure (OOP)
+//  * - Use pure functions for calculations (FP)
+//  * - Use immutability where possible (FP)
+//  * - Use methods for actions (OOP)
+//  */
